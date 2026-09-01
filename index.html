@@ -1,0 +1,2258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台股交易情報中心 | 2026年9月1日</title>
+  <meta name="description" content="整合2026年9月1日今日盤勢、大盤位階與風控交易決策、個股深度情報與巴菲特價值投資分析的台股量化情報儀表板。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-card-hover: #f1f5f9;
+      --accent-navy: #0f172a;
+      --accent-blue: #1d4ed8;
+      --accent-green: #15803d;  /* 台股跌 / 賣 */
+      --accent-red: #b91c1c;    /* 台股漲 / 買 */
+      --accent-neutral: #64748b;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --border-accent: #cbd5e1;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.03);
+      --shadow-md: 0 4px 12px rgba(15,23,42,0.04);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans TC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: #0f172a;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 18px; height: 18px; stroke: #ffffff; }
+    .logo-text h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+    .logo-text p { font-size: 11px; color: var(--text-muted); }
+
+    .header-stats {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: center;
+    }
+    .hstat {
+      text-align: center;
+      padding: 4px 10px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .hstat-label { font-size: 10px; color: var(--text-muted); margin-bottom: 2px; }
+    .hstat-value { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+    .hstat-value.up { color: var(--accent-red); }
+    .hstat-value.down { color: var(--accent-green); }
+    .hstat-value.neutral { color: var(--text-secondary); }
+
+    .header-badge {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    /* ── NAV TABS ── */
+    .nav-tabs {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 61px;
+      z-index: 90;
+    }
+    .tabs-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs-inner::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      padding: 13px 18px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+    .tab-btn:hover {
+      color: var(--text-primary);
+    }
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    /* ── MAIN CONTENT ── */
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; animation: fadeIn 0.2s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── SECTION HEADERS ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+    .section-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: #ffffff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .subsection { margin-bottom: 24px; }
+    .subsection-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+    .card:hover {
+      border-color: var(--border-accent);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    /* ── GRID LAYOUTS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+    @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 900px)  { .grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px)  { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    /* ── OVERVIEW STRIP ── */
+    .overview-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 20px;
+      scrollbar-width: none;
+    }
+    .overview-strip::-webkit-scrollbar { display: none; }
+    .ov-chip {
+      flex-shrink: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-width: 145px;
+      transition: border-color 0.2s;
+    }
+    .ov-chip:hover { border-color: var(--border-accent); }
+    .ov-chip-label { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; font-weight: 500; }
+    .ov-chip-value { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+    .ov-chip-sub { font-size: 11px; margin-top: 2px; font-weight: 600; }
+
+    /* ── TABLE ── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .data-table th {
+      padding: 9px 12px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: #f8fafc;
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+      color: var(--text-secondary);
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f8fafc; }
+
+    /* ── TAGS ── */
+    .tag, .tag-green, .tag-red, .tag-blue, .tag-yellow, .tag-purple, .tag-cyan, .tag-gray {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #e2e8f0;
+      white-space: nowrap;
+    }
+
+    /* ── TAIWAN STOCK COLORS: RED UP, GREEN DOWN ── */
+    .up { color: var(--accent-red) !important; font-weight: 600; }
+    .down { color: var(--accent-green) !important; font-weight: 600; }
+    .neutral, .flat { color: var(--text-secondary) !important; font-weight: 600; }
+
+    .price-big { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+    .num-highlight { font-variant-numeric: tabular-nums; }
+
+    /* ── METRIC ROW ── */
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 12px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .metric-row:last-child { border-bottom: none; }
+    .metric-label { color: var(--text-secondary); }
+    .metric-value { font-weight: 600; color: var(--text-primary); }
+
+    /* ── DECISION BADGES ── */
+    .decision-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+    }
+    .decision-hold { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+    .decision-buy { background: #f8fafc; color: var(--text-primary); border: 1px solid #cbd5e1; }
+    .decision-watch { background: #f8fafc; color: var(--text-secondary); border: 1px solid #e2e8f0; }
+
+    /* ── NEWS & ALERTS (CLEAN REFINED CARDS) ── */
+    .alert {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .alert-body h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+    .alert-body p {
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .alert-red {
+      border-left: 3px solid var(--accent-red);
+    }
+    .alert-green {
+      border-left: 3px solid var(--accent-green);
+    }
+    .alert-yellow {
+      border-left: 3px solid #64748b;
+      background: #f8fafc;
+    }
+
+    .news-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-right: 6px;
+    }
+    .news-badge.bull { background: #fef2f2; color: var(--accent-red); border: 1px solid #fecaca; }
+    .news-badge.bear { background: #f0fdf4; color: var(--accent-green); border: 1px solid #bbf7d0; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: #334155;
+      transition: width 0.8s ease;
+    }
+
+    /* ── TIMELINE ── */
+    .timeline { position: relative; padding-left: 18px; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: #e2e8f0;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-dot {
+      position: absolute;
+      left: -18px;
+      top: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #64748b;
+    }
+    .timeline-date { font-size: 11px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+    .timeline-content { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── DETAILS (TAB 3 FOLDABLE CARDS) ── */
+    details {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.15s;
+      overflow: hidden;
+    }
+    details:hover { border-color: var(--border-accent); }
+    details[open] { border-color: #94a3b8; }
+    summary {
+      padding: 11px 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+      background: #ffffff;
+      color: var(--text-primary);
+    }
+    summary:hover { background: #f8fafc; }
+    summary::-webkit-details-marker { display: none; }
+    .details-body {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      background: #fafbfc;
+      font-size: 12.5px;
+      line-height: 1.7;
+    }
+
+    /* ── VALUATION COLOR BARS (TAB 4) ── */
+    .val-bar-wrapper { margin: 16px 0; }
+    .val-spectrum {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+      background: #e2e8f0;
+    }
+    .spec-cheap     { background: #cbd5e1; }
+    .spec-fair-low  { background: #94a3b8; }
+    .spec-fair      { background: #64748b; }
+    .spec-fair-high { background: #475569; }
+    .spec-dear      { background: #1e293b; }
+
+    .val-legend {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      text-align: center;
+      font-size: 10.5px;
+      color: var(--text-muted);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .val-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      background: #ffffff;
+      border: 1px solid #f1f5f9;
+    }
+    .val-row.current-pos {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      font-weight: 700;
+    }
+
+    .buffett-quote {
+      background: #f8fafc;
+      border-left: 3px solid #64748b;
+      padding: 12px 16px;
+      border-radius: 0 6px 6px 0;
+      font-style: normal;
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-top: 14px;
+    }
+
+    .scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      background: #ffffff;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></div>
+      <div class="logo-text">
+        <h1>台股交易情報中心</h1>
+        <p>AI 量化研究與風控決策系統</p>
+      </div>
+    </div>
+
+    <div class="header-stats">
+      <div class="hstat">
+        <div class="hstat-label">加權指數 TWSE</div>
+        <div class="hstat-value up num-highlight">46,948.72 ▲ +820.25</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">成交金額</div>
+        <div class="hstat-value num-highlight">1 兆 1,876 億</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">櫃買 TPEx</div>
+        <div class="hstat-value up num-highlight">410.77 ▲ +2.26%</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">三大法人合計</div>
+        <div class="hstat-value up num-highlight">+566.37 億</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">台指期外資淨空單</div>
+        <div class="hstat-value num-highlight">7.87 萬口 (回補4,251)</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">新台幣匯率</div>
+        <div class="hstat-value up num-highlight">31.633 (升3.3分)</div>
+      </div>
+      <div class="hstat">
+        <div class="hstat-label">VIX 恐慌指數</div>
+        <div class="hstat-value num-highlight">15.90 (多頭常態)</div>
+      </div>
+    </div>
+
+    <div class="header-badge">2026年9月1日 盤後報告</div>
+  </div>
+</header>
+
+<!-- ═══════════════════ NAV TABS ═══════════════════ -->
+<div class="nav-tabs">
+  <div class="tabs-inner">
+    <button class="tab-btn active" onclick="switchTab('today')" id="tab-today">
+      今日市場情報
+    </button>
+    <button class="tab-btn" onclick="switchTab('decision')" id="tab-decision">
+      交易決策
+    </button>
+    <button class="tab-btn" onclick="switchTab('stocks')" id="tab-stocks">
+      個股深度情報
+    </button>
+    <button class="tab-btn" onclick="switchTab('value')" id="tab-value">
+      價值投資分析
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+<main>
+
+<!-- ════════════════════════════════════════════════════
+     TAB 1: 今日市場情報
+     ════════════════════════════════════════════════════ -->
+<div class="tab-panel active" id="panel-today">
+  <div class="section-header">
+    <h2>今日市場情報</h2>
+    <span class="section-date">2026年9月1日 盤後更新</span>
+  </div>
+
+  <!-- 全球指數橫向概覽晶片 -->
+  <div class="overview-strip">
+    <div class="ov-chip">
+      <div class="ov-chip-label">台股加權 TWSE</div>
+      <div class="ov-chip-value up num-highlight">46,948.72</div>
+      <div class="ov-chip-sub up">▲ +820.25 (+1.78%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">櫃買指數 TPEx</div>
+      <div class="ov-chip-value up num-highlight">410.77</div>
+      <div class="ov-chip-sub up">▲ +9.07 (+2.26%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">費城半導體 SOX</div>
+      <div class="ov-chip-value up num-highlight">11,535.05</div>
+      <div class="ov-chip-sub up">▲ +65.39 (+0.57%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">台積電 TSM ADR</div>
+      <div class="ov-chip-value down num-highlight">$415.32</div>
+      <div class="ov-chip-sub down">▼ -2.20 (-0.53%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">那斯達克 IXIC</div>
+      <div class="ov-chip-value down num-highlight">26,370.89</div>
+      <div class="ov-chip-sub down">▼ -31.53 (-0.12%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">道瓊工業 DJI</div>
+      <div class="ov-chip-value down num-highlight">53,185.90</div>
+      <div class="ov-chip-sub down">▼ -374.09 (-0.70%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">標普 500 GSPC</div>
+      <div class="ov-chip-value down num-highlight">7,686.14</div>
+      <div class="ov-chip-sub down">▼ -25.62 (-0.33%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">南韓綜合 KS11</div>
+      <div class="ov-chip-value up num-highlight">6,835.80</div>
+      <div class="ov-chip-sub up">▲ +15.78 (+0.23%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">日經 225 N225</div>
+      <div class="ov-chip-value down num-highlight">66,215.34</div>
+      <div class="ov-chip-sub down">▼ -96.59 (-0.15%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">上證指數</div>
+      <div class="ov-chip-value down num-highlight">3,979.89</div>
+      <div class="ov-chip-sub down">▼ -6.41 (-0.16%)</div>
+    </div>
+    <div class="ov-chip">
+      <div class="ov-chip-label">恒生指數 HSI</div>
+      <div class="ov-chip-value down num-highlight">25,329.73</div>
+      <div class="ov-chip-sub down">▼ -237.26 (-0.93%)</div>
+    </div>
+  </div>
+
+  <!-- 今日利多 vs 今日利空 -->
+  <div class="grid-2" style="margin-bottom: 24px;">
+    <div>
+      <div class="subsection-title"><span class="news-badge bull">多</span> 今日利多消息</div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>輝達重金 35 億美元認購聯發科 ECB，IC 設計掀漲停潮</h4>
+          <p>輝達注資約新台幣 1,106 億元深化車用 AI、次世代 PC 處理器與 ASIC 結盟。聯發科 (2454) 跳空漲停收 4,315 元，掃除科技股估值雜音。</p>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>SEMICON Taiwan 2026 盛大開展，矽光子與先進封裝百花齊放</h4>
+          <p>全球巨頭齊聚台北，聚焦 3D 封裝 (CoWoS/SoIC)、矽光子 CPO 與 FOPLP，台廠供應鏈成為全球資本焦點。</p>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>半導體矽晶圓三年首度全面漲價，台勝科暴漲突破 400 元</h4>
+          <p>AI 伺服器與 HBM 帶動 6/8/12 吋矽晶圓稼動率滿載全面調價。台勝科 (3532) Q2 轉虧為盈，大漲 6.07% 收 402 元。</p>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>貿聯-KY H1 獲利創天價，次世代 800V HVDC 訂單滿至 2028</h4>
+          <p>Q2 EPS 15.28 元、H1 EPS 26.94 元雙創歷史新高，併購 Interplex 綜效發酵，大漲 6.68% 報 2,315 元。</p>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>台新新光金法說獲利暴增 329%，市值破兆晉升兆元金控</h4>
+          <p>H1 純益 438 億元 (EPS 1.69元)，雙銀 2027/1/1 正式合併，總經理保證明年現金股利優於今年，大漲 4.54% 收 40.30 元創天價。</p>
+        </div>
+      </div>
+      <div class="alert alert-red">
+        <div class="alert-body">
+          <h4>華碩成立「實體AI事業群（PAS BG）」，股價重返千金</h4>
+          <p>全面改組智慧物聯網搶攻人形機器人萬億藍海，伺服器出貨放量，外資投信大買 2,636 張收在 1,010 元。</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="subsection-title"><span class="news-badge bear">空</span> 今日利空消息</div>
+      <div class="alert alert-green">
+        <div class="alert-body">
+          <h4>美國 10 年期公債殖利率飆升至 4.78%，地緣緊張升溫</h4>
+          <p>美軍空襲伊朗軍事據點推升油價反彈 2%，市場對聯準會偏鷹降息延後疑慮加劇，美股期貨電子盤震盪承壓。</p>
+        </div>
+      </div>
+      <div class="alert alert-green">
+        <div class="alert-body">
+          <h4>聯準會偏鷹氛圍未散，市場緊盯 9/4 非農就業報告</h4>
+          <p>抗通膨未竟訊號抑制美股大型科技權值股估值擴張，非農報告將成為 9 月 FOMC 利率會議關鍵分水嶺。</p>
+        </div>
+      </div>
+      <div class="alert alert-green">
+        <div class="alert-body">
+          <h4>欣興遭搜索後 GDR 於 9/1 掛牌，千元關卡籌碼換手考驗</h4>
+          <p>傳統 PCB 產地標示爭議引發短線情緒賣壓，海外存託憑證 (GDR) 掛牌，市場密切觀察千元保衛戰換手力道。</p>
+        </div>
+      </div>
+      <div class="alert alert-green">
+        <div class="alert-body">
+          <h4>記憶體爆量急行軍後獲利調節，力積電遭三大法人狂賣 8 萬張</h4>
+          <p>連續大漲後外資與隔日沖主力反手提款，力積電 (6770) 單日遭賣超 8.05 萬張回跌 3.01% 收 70.80 元。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 市場情緒與籌碼指標 -->
+  <div class="subsection">
+    <div class="subsection-title">市場情緒與籌碼指標</div>
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-title">台指期外資淨空單</div>
+        <div class="price-big num-highlight" style="font-size:22px;">7.87 萬口</div>
+        <div style="font-size:12px;color:var(--accent-red);font-weight:600;margin-top:4px;">▲ 單日大幅回補 4,251 口</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">外資避險情緒大幅降溫，期現貨翻多</div>
+      </div>
+      <div class="card">
+        <div class="card-title">新台幣兌美元匯率</div>
+        <div class="price-big up num-highlight" style="font-size:22px;">31.633 元</div>
+        <div style="font-size:12px;color:var(--accent-red);font-weight:600;margin-top:4px;">▲ 強勢升值 3.3 分</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">外資熱錢加速回流台北股匯市</div>
+      </div>
+      <div class="card">
+        <div class="card-title">美股 VIX 恐慌指數</div>
+        <div class="price-big num-highlight" style="font-size:22px;">15.90 點</div>
+        <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:4px;">微升 +0.98 點</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">持續處於 20 以下多頭健康常態區</div>
+      </div>
+      <div class="card">
+        <div class="card-title">CNN 恐懼與貪婪指數</div>
+        <div class="price-big num-highlight" style="font-size:22px;">47 / 100</div>
+        <div style="font-size:12px;color:var(--text-secondary);font-weight:600;margin-top:4px;">中性 (Neutral)</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">融資 8,896.99 億 / 券資比 2.48%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全球指數行情總覽表格 -->
+  <div class="subsection">
+    <div class="subsection-title">全球主要指數行情總覽</div>
+    <div class="card">
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>市場 / 指數代號</th>
+              <th>最新收盤點數</th>
+              <th>漲跌點數</th>
+              <th>漲跌幅度</th>
+              <th>交易基準日</th>
+              <th>盤面重點與國際連動解析</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>台股加權 TWSE (^TWII)</strong></td>
+              <td class="num-highlight font-bold">46,948.72</td>
+              <td class="up">+820.25</td>
+              <td class="up font-bold">+1.78%</td>
+              <td>09/01 收盤</td>
+              <td>收復所有短均線，歷史次高與波段新高，成交量 1 兆 1,876 億</td>
+            </tr>
+            <tr>
+              <td><strong>櫃買指數 TPEx (^TWOII)</strong></td>
+              <td class="num-highlight font-bold">410.77</td>
+              <td class="up">+9.07</td>
+              <td class="up font-bold">+2.26%</td>
+              <td>09/01 收盤</td>
+              <td>中小型股全面大漲，內資與主力買盤極為充沛</td>
+            </tr>
+            <tr>
+              <td><strong>費城半導體 SOX (^SOX)</strong></td>
+              <td class="num-highlight">11,535.05</td>
+              <td class="up">+65.39</td>
+              <td class="up">+0.57%</td>
+              <td>08/31 收盤</td>
+              <td>美股逆勢收紅族群，半導體硬體與設備展現超強韌性</td>
+            </tr>
+            <tr>
+              <td><strong>台積電 ADR (TSM)</strong></td>
+              <td class="num-highlight">$415.32</td>
+              <td class="down">-2.20</td>
+              <td class="down">-0.53%</td>
+              <td>08/31 收盤</td>
+              <td>長債殖利率壓抑微幅回檔，8月全月仍累計上漲 2.7%</td>
+            </tr>
+            <tr>
+              <td><strong>那斯達克 Nasdaq (^IXIC)</strong></td>
+              <td class="num-highlight">26,370.89</td>
+              <td class="down">-31.53</td>
+              <td class="down">-0.12%</td>
+              <td>08/31 收盤</td>
+              <td>高檔橫盤整理，8月全月累計大漲 3.9% 多頭無虞</td>
+            </tr>
+            <tr>
+              <td><strong>道瓊工業 Dow Jones (^DJI)</strong></td>
+              <td class="num-highlight">53,185.90</td>
+              <td class="down">-374.09</td>
+              <td class="down">-0.70%</td>
+              <td>08/31 收盤</td>
+              <td>受油價反彈與長債殖利率壓抑，傳產藍籌股小幅承壓</td>
+            </tr>
+            <tr>
+              <td><strong>標普500 S&P 500 (^GSPC)</strong></td>
+              <td class="num-highlight">7,686.14</td>
+              <td class="down">-25.62</td>
+              <td class="down">-0.33%</td>
+              <td>08/31 收盤</td>
+              <td>能源類股隨油價抗跌，高估值板塊進入高檔休整</td>
+            </tr>
+            <tr>
+              <td><strong>南韓綜合 KOSPI (^KS11)</strong></td>
+              <td class="num-highlight">6,835.80</td>
+              <td class="up">+15.78</td>
+              <td class="up">+0.23%</td>
+              <td>09/01 收盤</td>
+              <td>三星電子與 SK 海力士高檔抗跌小幅收紅</td>
+            </tr>
+            <tr>
+              <td><strong>日經 225 Nikkei (^N225)</strong></td>
+              <td class="num-highlight">66,215.34</td>
+              <td class="down">-96.59</td>
+              <td class="down">-0.15%</td>
+              <td>09/01 收盤</td>
+              <td>日圓震盪，指數於 66,000 點高檔進行橫盤箱型換手</td>
+            </tr>
+            <tr>
+              <td><strong>上證指數 (000001.SS)</strong></td>
+              <td class="num-highlight">3,979.89</td>
+              <td class="down">-6.41</td>
+              <td class="down">-0.16%</td>
+              <td>09/01 收盤</td>
+              <td>在 4,000 點大關前蓄勢整理</td>
+            </tr>
+            <tr>
+              <td><strong>恒生指數 Hang Seng (^HSI)</strong></td>
+              <td class="num-highlight">25,329.73</td>
+              <td class="down">-237.26</td>
+              <td class="down">-0.93%</td>
+              <td>09/01 收盤</td>
+              <td>人民幣匯率波動與科技、地產板塊小幅回吐</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 今日名單個股速查卡片 (6檔) -->
+  <div class="subsection">
+    <div class="subsection-title">今日焦點個股盤後速查</div>
+    <div class="grid-3">
+      <!-- 華碩 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">2357 華碩</div>
+            <span class="tag">實體AI解決方案事業群</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big up num-highlight">1,010.00</div>
+            <div class="up">+11.00 (+1.10%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">1,000 / 1,025 / 987</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">5,654 張</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value up">+2,636 張 (投信+1,291)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          9/1 正式成立 PAS BG 搶攻機器人萬億藍海，重登千金俱樂部。Q2 EPS 25.64 元三率三升。
+        </div>
+      </div>
+
+      <!-- 台新新光金 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">2887 台新新光金</div>
+            <span class="tag">市值破兆金控</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big up num-highlight">40.30</div>
+            <div class="up">+1.75 (+4.54%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">38.90 / 40.30 / 38.85</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">89,499 張 (爆巨量)</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value up">+31,646 張 (外資狂買2.4萬)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          Q2 法說上半年獲利飆升 329%，收全日最高點創天價。保證明年現金股利優於今年。
+        </div>
+      </div>
+
+      <!-- 創意 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">3443 創意</div>
+            <span class="tag">ASIC 晶艦・台積親生子</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big down num-highlight">5,995.00</div>
+            <div class="down">-105.00 (-1.72%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">6,490 / 6,490 / 5,925</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">2,109 張</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value down">-184 張 (外資-195)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          早盤衝 6,490 元歷史天價後遭遇隔日沖獲利調節賣壓，力守 6,000 元關卡。長線基本面無虞。
+        </div>
+      </div>
+
+      <!-- 台勝科 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">3532 台勝科</div>
+            <span class="tag">矽晶圓三年全面漲價</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big up num-highlight">402.00</div>
+            <div class="up">+23.00 (+6.07%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">378.00 / 408.50 / 378.00</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">9,119 張 (倍增放量)</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value up">+915 張 (投信+694)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          全尺寸矽晶圓三年首見全面調價，稼動率滿載且 Q2 順利轉盈。實體長紅攻克 400 元壓力。
+        </div>
+      </div>
+
+      <!-- 貿聯-KY -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">3665 貿聯-KY</div>
+            <span class="tag">次世代 800V HVDC</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big up num-highlight">2,315.00</div>
+            <div class="up">+145.00 (+6.68%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">2,190 / 2,375 / 2,165</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">4,568 張 (暴增3倍)</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value up">+258 張 (投信大買622)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          H1 EPS 26.94 元創新高，收購 Interplex 綜效發酵，次世代 800V HVDC 線束訂單滿至 2028。
+        </div>
+      </div>
+
+      <!-- 力積電 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">6770 力積電</div>
+            <span class="tag">3D AI Foundry</span>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-big down num-highlight">70.80</div>
+            <div class="down">-2.20 (-3.01%)</div>
+          </div>
+        </div>
+        <div class="metric-row"><div class="metric-label">開 / 高 / 低</div><div class="metric-value">73.60 / 73.70 / 70.40</div></div>
+        <div class="metric-row"><div class="metric-label">成交量</div><div class="metric-value num-highlight">149,788 張 (天量換手)</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人買賣超</div><div class="metric-value down">-80,500 張 (外資大賣)</div></div>
+        <div style="font-size:11.5px;color:var(--text-secondary);margin-top:8px;line-height:1.5;">
+          前日 20 萬張天量大漲後短線遭隔日沖清洗調節，回測 10MA (68.5) 尋求支撐，嚴守 68 停損。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 聰明錢潛伏區 vs 未來兩週時程表 -->
+  <div class="grid-2" style="margin-bottom:24px;">
+    <div>
+      <div class="subsection-title">聰明錢潛伏區（機構法人金流追蹤）</div>
+      <div class="card">
+        <div class="scroll-x">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>核心標的</th>
+                <th>買盤規模</th>
+                <th>聰明錢佈局邏輯與戰略</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>主動統一升級50 (00403A)</strong></td>
+                <td class="num-highlight font-bold">外資單日買 27 萬張</td>
+                <td>外資罕見以主動式 ETF 領軍，一籃子暗中建倉台股 AI 與半導體升級股，避開單一個股流動性衝擊。</td>
+              </tr>
+              <tr>
+                <td><strong>台新新光金 (2887)</strong></td>
+                <td class="num-highlight font-bold">三大法人買 31,646 張</td>
+                <td>市值破兆晉升第四大金控，H1 獲利暴增 329%，明年保證高現金股利，引爆中長線收息與長線避險資金卡位。</td>
+              </tr>
+              <tr>
+                <td><strong>台勝科 (3532)</strong></td>
+                <td class="num-highlight font-bold">投信單日買 694 張</td>
+                <td>「材料端漲價往往領先下游獲利體現」。矽晶圓三年庫存調整結束，6/8/12 吋全面調價第一時間果斷重兵佈局。</td>
+              </tr>
+              <tr>
+                <td><strong>貿聯-KY (3665)</strong></td>
+                <td class="num-highlight font-bold">投信單日買 622 張</td>
+                <td>GB200/GB300 機櫃全面導入 800V 高壓直流與 Helio 高速銅線，訂單能見度已延伸至 2028 年，逢回必買底倉。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="subsection-title">未來 2 週重大事件時程表</div>
+      <div class="card">
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 1 日（二）</div>
+            <div class="timeline-content">
+              欣興 (3037) GDR 掛牌上市；台新新光金 Q2 法說獲利飆 329%；華碩成立 PAS BG 事業群；台美 8 月 PMI 公布。
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 2 日 - 9 月 4 日</div>
+            <div class="timeline-content">
+              SEMICON Taiwan 2026 國際半導體展盛大開展（聚焦 CoWoS/SoIC、矽光子 CPO、FOPLP 與矽晶圓）。
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 4 日（五）</div>
+            <div class="timeline-content">
+              美國公布 8 月非農就業人口新增數據與失業率（9 月聯準會利率決策前最關鍵總經指標）。
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 9 日 - 9 月 10 日</div>
+            <div class="timeline-content">
+              蘋果 (Apple) 秋季發表會（iPhone 18 / Apple Intelligence）；台股上市櫃公司 8 月合併營收公布截止。
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 11 日（五）</div>
+            <div class="timeline-content">
+              美國公布 8 月 CPI 與核心消費者物價指數通膨數據。
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">9 月 15 日 - 9 月 16 日</div>
+            <div class="timeline-content">
+              美國聯準會 (FOMC) 召開 9 月利率決策會議，牽動全球股匯市與美債殖利率走向。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     TAB 2: 交易決策
+     ════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-decision">
+  <div class="section-header">
+    <h2>交易決策與風控審查</h2>
+    <span class="section-date">2026年9月1日 執行指令</span>
+  </div>
+
+  <!-- 大盤趨勢與位階判定 -->
+  <div class="subsection">
+    <div class="subsection-title">大盤趨勢多空與位階判定（朱家泓技術分析準則）</div>
+    <div class="grid-3" style="margin-bottom:16px;">
+      <div class="card">
+        <div class="card-title">大盤位階與均線排列</div>
+        <div style="font-size:14px;font-weight:700;color:var(--accent-red);margin-bottom:8px;">多頭主升段強烈攻擊盤</div>
+        <div class="metric-row"><div class="metric-label">加權指數 TWSE</div><div class="metric-value up num-highlight">46,948.72 點 (+1.78%)</div></div>
+        <div class="metric-row"><div class="metric-label">5MA 攻擊線</div><div class="metric-value num-highlight">46,243.30 點</div></div>
+        <div class="metric-row"><div class="metric-label">10MA 支撐線</div><div class="metric-value num-highlight">45,602.56 點</div></div>
+        <div class="metric-row"><div class="metric-label">20MA 生命線</div><div class="metric-value num-highlight">45,391.29 點</div></div>
+        <div class="metric-row"><div class="metric-label">60MA 季線</div><div class="metric-value num-highlight">44,929.50 點</div></div>
+        <div class="metric-row"><div class="metric-label">KD(5,3) 指標</div><div class="metric-value up">K=85.90 / D=75.52 (強勢鈍化)</div></div>
+        <div class="metric-row"><div class="metric-label">20MA 正乖離</div><div class="metric-value up">+3.43% (健康常態)</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">總體資金水位規劃</div>
+        <div style="font-size:14px;font-weight:700;color:var(--accent-blue);margin-bottom:10px;">偏多積極・嚴控單一集中度</div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span>持股水位 (目標 65%~75%)</span><span class="up font-bold">63.67%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:63.67%;"></div></div>
+          <div style="font-size:11px;color:var(--text-muted);">股票總市值 344,801 元</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+            <span>現金儲備 (目標 25%~35%)</span><span class="neutral font-bold">36.33%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:36.33%;background:#64748b;"></div></div>
+          <div style="font-size:11px;color:var(--accent-green);font-weight:600;">可用現金 196,772 元 ｜ 充裕安全儲備</div>
+        </div>
+        <div class="metric-row"><div class="metric-label">資產總市值</div><div class="metric-value num-highlight font-bold">541,573 元</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">操盤心法與紀律</div>
+        <div class="alert alert-red" style="margin-bottom:8px;">
+          <div class="alert-body">
+            <h4>KD 鈍化順勢奔馳</h4>
+            <p>KD(5,3) 站上 80 鈍化攻擊區且指數穩居 5MA 之上，嚴禁主觀摸頂猜高做空，順勢讓多頭利潤奔馳。</p>
+          </div>
+        </div>
+        <div class="alert alert-yellow" style="margin-bottom:0;">
+          <div class="alert-body">
+            <h4>拉回有守再加碼</h4>
+            <p>指數逼近 47,000 大關，嚴禁追高連續急拉個股，秉持「回測支撐有守低接、破關鍵防守點紀律砍單」原則。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手中持股 6 檔卡片 -->
+  <div class="subsection">
+    <div class="subsection-title">手中持股決策分析（6 檔部位全面檢驗）</div>
+    <div class="grid-2">
+
+      <!-- 2357 華碩 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);">2357 持股 85 股 ｜ 佔比 15.85%</div>
+            <div style="font-size:17px;font-weight:700;">華碩</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-red);">+7,739 元</div>
+            <div style="font-size:11.5px;color:var(--accent-red);font-weight:700;">+9.91%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-hold" style="margin-bottom:10px;">續抱（維持）</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">918.95 元 / 1,010.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">5MA 攻擊線 / 10MA 支撐</div><div class="metric-value up">982.60 元 / 952.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">7月營收 841億 (+53%) ｜ Q2 EPS 25.64元</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value up">+2,636 張（內外資同步大買）</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>操作計劃：</strong>收盤守穩 5MA (982元) 續抱奔馳；收盤跌破 5MA 獲利減碼 1/3；跌破 10MA (952元) 全數清倉保利。千元以上嚴禁追價加碼。
+        </div>
+      </div>
+
+      <!-- 2887 台新新光金 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);font-weight:600;">2887 持股 4,040 股 ｜ 佔比 30.06% (達警戒上限)</div>
+            <div style="font-size:17px;font-weight:700;">台新新光金</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-red);">+27,310 元</div>
+            <div style="font-size:11.5px;color:var(--accent-red);font-weight:700;">+20.16%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-watch" style="margin-bottom:10px;">續抱（維持），嚴禁追價加碼！</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">33.54 元 / 40.30 元 (創天價)</div></div>
+        <div class="metric-row"><div class="metric-label">起漲防守點 / 5MA 支撐</div><div class="metric-value up">38.80 元 / 38.20 元</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">H1純益 438億 (+329%) ｜ 市值破兆晉升第四大金控</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value up">+31,646 張（外資狂買2.45萬張）</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>風控指示：</strong>部位佔比達 30.06%，絕對凍結加碼權限！若跌破起漲低點 <strong>38.80 元</strong>，強制市價調節 1,300 股（將佔比降至 20% 以下安全水位）。未破前續抱享有合併綜效。
+        </div>
+      </div>
+
+      <!-- 3443 創意 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);">3443 持股 6 股 ｜ 佔比 6.64%</div>
+            <div style="font-size:17px;font-weight:700;">創意</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-green);">-391 元</div>
+            <div style="font-size:11.5px;color:var(--accent-green);font-weight:700;">-1.08%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-watch" style="margin-bottom:10px;">觀望維持・嚴守防守線</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">6,060.17 元 / 5,995.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">前波紅K低防守 / 10MA</div><div class="metric-value">5,850.00 元 / 5,760.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">7月營收 57.69億 (+158%) ｜ H1 EPS 23.89元</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value down">-184 張（衝高遇隔日沖賣壓）</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>操作計劃：</strong>早盤創天價 6,490 後留長上影黑 K，嚴禁向下攤平。若跌破 <strong>5,850 元</strong> 無條件停損 1/2（賣出 3 股）；跌破 10MA (5,760元) 全數清倉。守穩則續抱。
+        </div>
+      </div>
+
+      <!-- 3532 台勝科 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);">3532 持股 50 股 ｜ 佔比 3.71% (9/1 新建倉)</div>
+            <div style="font-size:17px;font-weight:700;">台勝科</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-green);">-192 元</div>
+            <div style="font-size:11.5px;color:var(--accent-green);font-weight:700;">-0.95%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-buy" style="margin-bottom:10px;">續抱・支撐逢低加碼</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">405.84 元 / 402.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">突破頸線防守 / 5MA</div><div class="metric-value up">390.00 元 / 391.20 元</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">三年首見全面調價 ｜ Q2 轉虧為盈 EPS 0.12元</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value up">+915 張 (投信大買694張)</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>加碼計劃：</strong>破底翻放量長紅真突破。若股價拉回測試 390~395 元不破且量縮，動用現金 20,000 元加碼 50 股（佔比拉至 7%~8%）；跌破 390 元停損出場。
+        </div>
+      </div>
+
+      <!-- 3665 貿聯-KY -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);">3665 持股 9 股 ｜ 佔比 3.85% (9/1 新建倉)</div>
+            <div style="font-size:17px;font-weight:700;">貿聯-KY</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-green);">-243 元</div>
+            <div style="font-size:11.5px;color:var(--accent-green);font-weight:700;">-1.15%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-buy" style="margin-bottom:10px;">續抱・具備逢低加碼條件</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">2,342.00 元 / 2,315.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">20MA 生命線 / 紅K半邊</div><div class="metric-value up">2,195.00 元 / 2,200.00 元</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">H1 EPS 26.94元天價 ｜ 次世代800V訂單滿至2028</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value up">+258 張 (投信大買622張)</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>加碼計劃：</strong>帶量吞噬重啟多頭。若在 2,250~2,300 元區間量縮守穩，動用現金 23,000~25,000 元（加碼約 10 股，佔比拉至 8.5%）；跌破 2,195 元停損出場。
+        </div>
+      </div>
+
+      <!-- 6770 力積電 -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-secondary);font-weight:600;">6770 持股 280 股 ｜ 佔比 3.66% (遭法人大提款)</div>
+            <div style="font-size:17px;font-weight:700;">力積電</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:var(--accent-green);">-521 元</div>
+            <div style="font-size:11.5px;color:var(--accent-green);font-weight:700;">-2.56%</div>
+          </div>
+        </div>
+        <div class="decision-badge decision-watch" style="margin-bottom:10px;">觀望緊盯・嚴設停損・嚴禁攤平</div>
+        <div class="metric-row"><div class="metric-label">平均成本 / 最新市價</div><div class="metric-value num-highlight">72.66 元 / 70.80 元</div></div>
+        <div class="metric-row"><div class="metric-label">關鍵停損線 (8/31紅K低)</div><div class="metric-value" style="color:var(--accent-red);font-weight:700;">68.00 元 (兼 10MA 支撐)</div></div>
+        <div class="metric-row"><div class="metric-label">巴菲特營收與財報體質</div><div class="metric-value">7月營收 66.69億 (48個月新高) ｜ 美光500億現金</div></div>
+        <div class="metric-row"><div class="metric-label">三大法人動向</div><div class="metric-value down">-80,500 張 (全市場賣超之冠)</div></div>
+        <div style="margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;font-size:11.5px;color:var(--text-secondary);border:1px solid #e2e8f0;">
+          <strong>停損紀律：</strong>籌碼極度凌亂，絕對禁止向下攤平！一旦盤中或收盤跌破 <strong>68.00 元</strong>，第一時間無條件市價全數出清（280 股全部賣出），嚴防虧損擴大。
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 風控經理審查報告專區 -->
+  <div class="subsection">
+    <div class="subsection-title">風控經理審查報告（全面風險核准與出場紀律）</div>
+    <div class="card">
+      <div class="alert alert-yellow" style="margin-bottom:14px;">
+        <div class="alert-body">
+          <h4>重大資金集中度警戒：2887 台新新光金 (30.06%)</h4>
+          <p>單一個股佔比超過 30% 嚴重違反分散投資原則。風控部已對 2887 發布「即刻加碼禁令」，嚴禁投入任何新現金。失守 38.80 元強制市價賣出 1,300 股壓回 20% 以下。</p>
+        </div>
+      </div>
+
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>股票代號與名稱</th>
+              <th>風控核准狀態</th>
+              <th>資產佔比</th>
+              <th>核心風險因子</th>
+              <th>風控核准條件與強制紀律指示</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>2357 華碩</strong></td>
+              <td><span class="tag">核准</span></td>
+              <td class="num-highlight">15.85%</td>
+              <td>重返千元後 20MA 乖離達 +10.49%</td>
+              <td>部位適中，核准續抱。嚴禁追價加碼；收盤破 5MA (982元) 減碼 1/3；破 10MA (952元) 全清。</td>
+            </tr>
+            <tr>
+              <td><strong>2887 台新新光金</strong></td>
+              <td><span class="tag">條件核准</span></td>
+              <td class="num-highlight font-bold" >30.06%</td>
+              <td>單一持股過度集中風險</td>
+              <td>絕對凍結加碼權限！以 38.80 元為嚴格防守門檻，失守立即強制減碼 1,300 股至 20% 以下。</td>
+            </tr>
+            <tr>
+              <td><strong>3443 創意</strong></td>
+              <td><span class="tag">條件核准</span></td>
+              <td class="num-highlight">6.64%</td>
+              <td>創天價後長上影黑 K 假突破疑慮</td>
+              <td>禁止攤平或摸底。收盤跌破 5,850 元強制停損 1/2 (3股)；進一步失守 10MA (5,760元) 全數清倉。</td>
+            </tr>
+            <tr>
+              <td><strong>3532 台勝科</strong></td>
+              <td><span class="tag">核准</span></td>
+              <td class="num-highlight">3.71%</td>
+              <td>單日大漲 6% 短線正乖離擴大</td>
+              <td>核准金字塔式加碼。條件：拉回 390~395 元不破且量縮，單次加碼上限 20,000 元；破 390 全數停損。</td>
+            </tr>
+            <tr>
+              <td><strong>3665 貿聯-KY</strong></td>
+              <td><span class="tag">核准</span></td>
+              <td class="num-highlight">3.85%</td>
+              <td>單日大漲 145 元短線急拉</td>
+              <td>基本面與技術面雙好。核准回踩 2,250~2,300 守穩時加碼上限 25,000 元 (總佔比上限 8.5%)；破 2,195 停損。</td>
+            </tr>
+            <tr>
+              <td><strong>6770 力積電</strong></td>
+              <td><span class="tag">條件核准</span></td>
+              <td class="num-highlight">3.66%</td>
+              <td>三大法人狂賣 8 萬張籌碼渙散</td>
+              <td>絕對禁止向下攤平！嚴格設定 68.00 元停損線，一旦跌破無條件全部市價賣出 280 股清倉止血。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     TAB 3: 個股深度情報
+     ════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-stocks">
+  <div class="section-header">
+    <h2>個股基本面與產業深度研究</h2>
+    <span class="section-date">共 19 檔標的 ｜ 依股票代號排序</span>
+  </div>
+
+  <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">
+    點擊下方各股票卡片即可展開閱讀完整營收結構、客戶分佈、企業營運模式、最新季度財務、未來展望與護城河分析：
+  </div>
+
+  <!-- 1342 八貫 -->
+  <details>
+    <summary>1342 八貫（TPK）<span class="tag" style="margin-left:auto;">航太醫療氣密布料霸主</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務結構與客戶</div>
+          <div class="metric-row"><div class="metric-label">航太救生滑梯布料</div><div class="metric-value">Boeing / Airbus 認證</div></div>
+          <div class="metric-row"><div class="metric-label">醫療高階氣密防褥瘡</div><div class="metric-value">歐美醫療大廠供應商</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率水準</div><div class="metric-value">24% ~ 27% (高階利基)</div></div>
+        </div>
+        <div>
+          <div class="card-title">最新財務與成長</div>
+          <div class="metric-row"><div class="metric-label">TTM EPS / 2026E EPS</div><div class="metric-value num-highlight">7.03 元 / 8.50 元</div></div>
+          <div class="metric-row"><div class="metric-label">7月月營收</div><div class="metric-value">3.38 億元 (年增+77%)</div></div>
+          <div class="metric-row"><div class="metric-label">3年獲利 CAGR</div><div class="metric-value">24.5% (穩健成長)</div></div>
+        </div>
+        <div>
+          <div class="card-title">護城河與展望</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            亞洲唯一通過波音與空巴雙重認證的航空逃生滑梯面料供應商。宜蘭三期新廠產能開出，訂單能見度長達 5~10 年，零長期負債，現金流極為健康。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2303 聯電 -->
+  <details>
+    <summary>2303 聯電（UMC）<span class="tag" style="margin-left:auto;">特殊成熟製程代工</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品與製程結構</div>
+          <div class="metric-row"><div class="metric-label">22/28 奈米製程</div><div class="metric-value">約 34% (主力獲利支柱)</div></div>
+          <div class="metric-row"><div class="metric-label">40/65 奈米及其他</div><div class="metric-value">約 66% (車用/OLED/高壓)</div></div>
+          <div class="metric-row"><div class="metric-label">通訊 / 消費電子</div><div class="metric-value">46% / 24%</div></div>
+        </div>
+        <div>
+          <div class="card-title">最新財務表現</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS / H1 EPS</div><div class="metric-value num-highlight">0.92 元 / 1.76 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率</div><div class="metric-value">31.2% (高於同業平均)</div></div>
+          <div class="metric-row"><div class="metric-label">現金股利殖利率</div><div class="metric-value">約 5.5% ~ 6.0%</div></div>
+        </div>
+        <div>
+          <div class="card-title">競爭策略與海外佈局</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            避開先進製程巨額資本支出競賽，專注特殊高壓 (HV)、微控制器與矽中介層代工。新加坡 Fab 12i P3 廠與英特爾 12nm 合作案提供長期地緣政治多元產能韌性。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2308 台達電 -->
+  <details>
+    <summary>2308 台達電（Delta）<span class="tag" style="margin-left:auto;">AI 電源與液冷解決方案龍頭</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務板塊營收比</div>
+          <div class="metric-row"><div class="metric-label">電源及零組件 (Power)</div><div class="metric-value">約 52% (伺服器電源領先)</div></div>
+          <div class="metric-row"><div class="metric-label">基礎設施 (散熱/資料中心)</div><div class="metric-value">約 28% (液冷水冷爆發)</div></div>
+          <div class="metric-row"><div class="metric-label">自動化 (工業/樓宇)</div><div class="metric-value">約 20%</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與獲利能見度</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS / H1 EPS</div><div class="metric-value num-highlight">3.85 元 / 7.21 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率</div><div class="metric-value">32.8% (創新高)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">15.50 ~ 16.50 元</div></div>
+        </div>
+        <div>
+          <div class="card-title">全球 AI 機櫃定價權</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            NVIDIA Blackwell/Rubin 伺服器電源與液冷散熱關鍵夥伴，次世代 800V HVDC 與 DC-DC 轉換器全球市佔第一。具備從晶片旁供電到整棟綠能資料中心的垂直整合實力。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2330 台積電 -->
+  <details>
+    <summary>2330 台積電（TSMC）<span class="tag" style="margin-left:auto;">全球晶圓代工與先進製程霸主</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">製程與技術平台營收</div>
+          <div class="metric-row"><div class="metric-label">高效能運算 (HPC / AI)</div><div class="metric-value">54.0% (第一大支柱)</div></div>
+          <div class="metric-row"><div class="metric-label">智慧型手機 (Smartphone)</div><div class="metric-value">32.0% (蘋果/高通旗艦)</div></div>
+          <div class="metric-row"><div class="metric-label">先進製程 (7nm及以下)</div><div class="metric-value">突破 72.0% (3nm滿載)</div></div>
+          <div class="metric-row"><div class="metric-label">成熟及特殊製程</div><div class="metric-value">約 28.0%</div></div>
+        </div>
+        <div>
+          <div class="card-title">客戶與財務體質</div>
+          <div class="metric-row"><div class="metric-label">美洲客戶 (Apple/NVIDIA等)</div><div class="metric-value">69% (獨佔全球 AI 晶片)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">58.00 ~ 62.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率展望</div><div class="metric-value">55% ~ 58% (強大定價權)</div></div>
+          <div class="metric-row"><div class="metric-label">全球晶圓代工市佔</div><div class="metric-value">62% ~ 65% (先進製程>90%)</div></div>
+        </div>
+        <div>
+          <div class="card-title">無可動搖的超級護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            2 奈米 (N2) 導入 GAA 奈米片架構，客戶導入意願遠超 3nm 同期；CoWoS 產能連三年翻倍仍供不應求。美亞利桑那、日熊本、德德勒斯登海外產能強化供應鏈韌性。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2345 智邦 -->
+  <details>
+    <summary>2345 智邦（Accton）<span class="tag" style="margin-left:auto;">白牌 AI 交換器與光傳輸龍頭</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品營收佔比</div>
+          <div class="metric-row"><div class="metric-label">網路交換器 (Switch)</div><div class="metric-value">約 68% (800G放量)</div></div>
+          <div class="metric-row"><div class="metric-label">網路應用設備與加速卡</div><div class="metric-value">約 22% (SmartNIC/DPU)</div></div>
+          <div class="metric-row"><div class="metric-label">寬頻接取與其他</div><div class="metric-value">約 10%</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與獲利能見度</div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">22.00 ~ 24.50 元</div></div>
+          <div class="metric-row"><div class="metric-label">北美一線 CSP 佔比</div><div class="metric-value">超過 70% (Amazon/Meta)</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率區間</div><div class="metric-value">22% ~ 24%</div></div>
+        </div>
+        <div>
+          <div class="card-title">矽光子 CPO 戰略制高點</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            全球超大型資料中心白牌交換器絕對霸主。率先導入矽光子光電共封裝 (CPO) 與 1.6T 次世代架構，直接掌握雲端巨頭客製化交換機規格制訂權。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2357 華碩 -->
+  <details open>
+    <summary>2357 華碩（ASUS）<span class="tag" style="margin-left:auto;">實體 AI 事業群成立・Q2 EPS 25.64元</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務結構與技術</div>
+          <div class="metric-row"><div class="metric-label">電競 ROG / 個人電腦</div><div class="metric-value">約 55% (全球市佔前三)</div></div>
+          <div class="metric-row"><div class="metric-label">伺服器 (AI Server)</div><div class="metric-value">營收佔比急升至 20%+</div></div>
+          <div class="metric-row"><div class="metric-label">主機板與零組件</div><div class="metric-value">約 20% (全球第一)</div></div>
+          <div class="metric-row"><div class="metric-label">實體AI與機器人 (PAS BG)</div><div class="metric-value">9/1 獨立改組新箭頭</div></div>
+        </div>
+        <div>
+          <div class="card-title">2026 爆發財務數據</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 單季 EPS</div><div class="metric-value">25.64 元 (同期新高)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 上半年 EPS</div><div class="metric-value">38.83 元 (賺近四個股本)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">75.00 ~ 78.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">每股淨值 (BVPS) / ROE</div><div class="metric-value">444.27 元 / 22%~26%</div></div>
+        </div>
+        <div>
+          <div class="card-title">雙引擎轉型成長護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            AI 伺服器成長目標上修至 150% 以上，獲 CSP 與企業客戶大單；Copilot+ AI PC 迎三年超級換機潮。成立 PAS BG 搶攻 2035 年 1.1 兆美元人形機器人與 AI 平台，擺脫傳統硬體代工評價。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2408 南亞科 -->
+  <details>
+    <summary>2408 南亞科（NANYA）<span class="tag" style="margin-left:auto;">1B 製程 DDR5 進入量產爆發</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品與應用結構</div>
+          <div class="metric-row"><div class="metric-label">DDR4 / LPDDR4</div><div class="metric-value">約 60% (成熟消費應用)</div></div>
+          <div class="metric-row"><div class="metric-label">DDR5 (1B 製程新產能)</div><div class="metric-value">佔比快速攀升至 30%+</div></div>
+          <div class="metric-row"><div class="metric-label">伺服器與工控應用</div><div class="metric-value">佔比突破 25%</div></div>
+        </div>
+        <div>
+          <div class="card-title">週期反轉財務指標</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS</div><div class="metric-value">1.45 元 (正式轉虧為盈)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">6.50 ~ 7.50 元 (強勁復甦)</div></div>
+          <div class="metric-row"><div class="metric-label">DRAM 合約價漲幅</div><div class="metric-value">Q3 預估續漲 15%~20%</div></div>
+        </div>
+        <div>
+          <div class="card-title">HBM 排擠效應下的超級受惠者</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            三大原廠（美光、三星、SK海力士）將傳統 DRAM 產能大舉轉向 HBM 與先進封裝，導致標準型 DDR4/DDR5 供應出現嚴重結構性缺口，南亞科迎來三年最強定價週期。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2454 聯發科 -->
+  <details>
+    <summary>2454 聯發科（MediaTek）<span class="tag" style="margin-left:auto;">輝達注資35億美元・IC設計龍頭</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品平台營收佔比</div>
+          <div class="metric-row"><div class="metric-label">手機旗艦晶片 (天璣系列)</div><div class="metric-value">約 52% (天璣9400效能領先)</div></div>
+          <div class="metric-row"><div class="metric-label">智慧裝置平台 (PMIC/網通)</div><div class="metric-value">約 38% (WiFi 7/車用)</div></div>
+          <div class="metric-row"><div class="metric-label">車用與客製化 ASIC</div><div class="metric-value">約 10% (高速成長)</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與輝達戰略入股</div>
+          <div class="metric-row"><div class="metric-label">輝達注資規模</div><div class="metric-value">35 億美元認購 ECB</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">85.00 ~ 92.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">每股現金股利配發</div><div class="metric-value">維持 80% 高配息政策</div></div>
+        </div>
+        <div>
+          <div class="card-title">次世代 AI PC 與車用護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            與輝達深度合作開發次世代 ARM 架構 PC 處理器與車載智慧座艙晶片，具備橫跨 Android、Windows 與車用的全方位 SoC 整合實力，直接與高通平起平坐。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 2887 台新新光金 -->
+  <details open>
+    <summary>2887 台新新光金（TSFH）<span class="tag" style="margin-left:auto;">市值破兆晉升第四大金控・H1獲利飆329%</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">合併後集團業務結構</div>
+          <div class="metric-row"><div class="metric-label">總資產規模</div><div class="metric-value">突破 9 兆元 (全台第四大)</div></div>
+          <div class="metric-row"><div class="metric-label">台新銀行 (消金/Richart)</div><div class="metric-value">高利息與財管手續費引擎</div></div>
+          <div class="metric-row"><div class="metric-label">新光人壽 (接軌IFRS 17)</div><div class="metric-value">壽險巨量經常性收益釋放</div></div>
+          <div class="metric-row"><div class="metric-label">雙銀合併基準日</div><div class="metric-value">定於 2027 年 1 月 1 日</div></div>
+        </div>
+        <div>
+          <div class="card-title">2026 爆發財務數據</div>
+          <div class="metric-row"><div class="metric-label">2026 上半年稅後純益</div><div class="metric-value">438 億元 (年增 +329%)</div></div>
+          <div class="metric-row"><div class="metric-label">上半年 EPS / 前7月淨利</div><div class="metric-value">1.69 元 / 破 527.8 億元</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">3.20 ~ 3.50 元 (創歷史高)</div></div>
+          <div class="metric-row"><div class="metric-label">最新每股淨值 (BVPS)</div><div class="metric-value">約 27.50 元 (P/B 僅 1.45x)</div></div>
+        </div>
+        <div>
+          <div class="card-title">金融重組評價重估 (Re-rating)</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            9/1 法說總經理保證明年以現金股利為主且優於今年（殖利率上看 5%+）。合併後資本適足率強勁，市值破兆晉升龍頭金控俱樂部，享有本益比與淨值比重估溢價。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3017 奇鋐 -->
+  <details>
+    <summary>3017 奇鋐（AVC）<span class="tag" style="margin-left:auto;">AI 伺服器 3D VC 與水冷散熱霸主</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務與散熱技術結構</div>
+          <div class="metric-row"><div class="metric-label">散熱零組件 (3D VC/冷板)</div><div class="metric-value">約 58% (NVIDIA核心主力)</div></div>
+          <div class="metric-row"><div class="metric-label">機箱與系統組裝</div><div class="metric-value">約 28% (伺服器機箱)</div></div>
+          <div class="metric-row"><div class="metric-label">風扇與其他周邊</div><div class="metric-value">約 14%</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與獲利能見度</div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">32.00 ~ 35.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">液冷散熱板 (Cold Plate)</div><div class="metric-value">CSP 市佔率超過 40%</div></div>
+          <div class="metric-row"><div class="metric-label">訂單能見度</div><div class="metric-value">滿至 2027 - 2028 年</div></div>
+        </div>
+        <div>
+          <div class="card-title">水冷快接頭與 CDU 護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            具備從散熱板、冷卻液分配裝置 (CDU)、分歧管 (Manifold) 到風扇機箱的一站式交付實力，解決漏水風險並通過 CSP 嚴苛認證，客戶轉換成本極高。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3030 德律 -->
+  <details>
+    <summary>3030 德律（TRI）<span class="tag" style="margin-left:auto;">半導體先進封裝檢測 AOI 龍頭</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">核心產品線佔比</div>
+          <div class="metric-row"><div class="metric-label">光學自動檢測 (AOI/AXI)</div><div class="metric-value">約 65% (3D X光檢測)</div></div>
+          <div class="metric-row"><div class="metric-label">電路板在線測試 (ICT)</div><div class="metric-value">約 22%</div></div>
+          <div class="metric-row"><div class="metric-label">半導體封裝檢測設備</div><div class="metric-value">約 13% (高毛利擴張中)</div></div>
+        </div>
+        <div>
+          <div class="card-title">獲利品質與財務指標</div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">9.50 ~ 10.50 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率</div><div class="metric-value">高達 56% ~ 60%</div></div>
+          <div class="metric-row"><div class="metric-label">現金股利配發率</div><div class="metric-value">常年維持 75% 以上</div></div>
+        </div>
+        <div>
+          <div class="card-title">CoWoS 先進封裝檢測門檻</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            AI 晶片價值極高，封裝缺陷容忍度為零。德律 3D AXI 檢測設備打入 CoWoS 與車用半導體供應鏈，高毛利高技術壁壘確保純益率維持在 25% 以上。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3037 欣興 -->
+  <details>
+    <summary>3037 欣興（Unimicron）<span class="tag" style="margin-left:auto;">全球 ABF 載板龍頭・GDR 掛牌</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">載板產品結構</div>
+          <div class="metric-row"><div class="metric-label">IC 載板 (ABF / BT)</div><div class="metric-value">約 68% (高階 AI 載板)</div></div>
+          <div class="metric-row"><div class="metric-label">高密度互連板 (HDI)</div><div class="metric-value">約 18% (AI 伺服器/衛星)</div></div>
+          <div class="metric-row"><div class="metric-label">傳統多層板與軟板</div><div class="metric-value">約 14%</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與事件評估</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS / H1 EPS</div><div class="metric-value num-highlight">8.45 元 / 11.73 元</div></div>
+          <div class="metric-row"><div class="metric-label">7月月營收</div><div class="metric-value">162.54 億 (年增+44%)</div></div>
+          <div class="metric-row"><div class="metric-label">9/1 GDR 掛牌事件</div><div class="metric-value">海外增資完成，籌碼換手</div></div>
+        </div>
+        <div>
+          <div class="card-title">CoWoS 載板核心地位無可取代</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            涉產地標示爭議屬傳統 PCB 產品，非核心高階 ABF 載板。欣興為台積電 CoWoS 與 NVIDIA Blackwell 載板第一大供應商，光復廠高階產能開出，長線基本面穩健。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3443 創意 -->
+  <details open>
+    <summary>3443 創意（GUC）<span class="tag" style="margin-left:auto;">台積親生子・ASIC 旗艦・衝 6,490 創天價</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務結構與技術</div>
+          <div class="metric-row"><div class="metric-label">量產代工 Turnkey</div><div class="metric-value">72.0% (ASIC量產爆發)</div></div>
+          <div class="metric-row"><div class="metric-label">委託設計 NRE</div><div class="metric-value">25.0% (前瞻 3nm/2nm)</div></div>
+          <div class="metric-row"><div class="metric-label">矽智財授權 IP</div><div class="metric-value">3.0% (HBM3e/4 PHY IP)</div></div>
+        </div>
+        <div>
+          <div class="card-title">最新財務表現</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS / H1 EPS</div><div class="metric-value">11.61 元 / 23.89 元</div></div>
+          <div class="metric-row"><div class="metric-label">7月月營收</div><div class="metric-value">57.69 億 (年增+158%)</div></div>
+          <div class="metric-row"><div class="metric-label">台積電持股比例</div><div class="metric-value">約 35% (第一大股東)</div></div>
+        </div>
+        <div>
+          <div class="card-title">無法複製的台積 DCA 護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            獲得台積電 CoWoS 產能與 3nm/2nm 先進製程最優先保證支援。GLink 2.5D/3D 互連技術業界頂尖，Google 次世代 Axion CPU 與 AI 晶片進入量產，655 億聯貸鎖定成長。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3532 台勝科 -->
+  <details open>
+    <summary>3532 台勝科（TWSC）<span class="tag" style="margin-left:auto;">矽晶圓三年全面漲價・稼動率滿載 Q2 轉盈</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品尺寸結構</div>
+          <div class="metric-row"><div class="metric-label">12 吋矽晶圓 (300mm)</div><div class="metric-value">約 70% (先進製程與記憶體)</div></div>
+          <div class="metric-row"><div class="metric-label">8 吋矽晶圓 (200mm)</div><div class="metric-value">約 30% (成熟與功率元件)</div></div>
+          <div class="metric-row"><div class="metric-label">母廠日本 SUMCO 持股</div><div class="metric-value">降至 38% (營運彈性釋放)</div></div>
+        </div>
+        <div>
+          <div class="card-title">週期反轉財務數據</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 EPS</div><div class="metric-value">0.12 元 (順利轉虧為盈)</div></div>
+          <div class="metric-row"><div class="metric-label">Q2 毛利率 / 營益率</div><div class="metric-value">6.90% / 2.64% (強烈修復)</div></div>
+          <div class="metric-row"><div class="metric-label">7月月營收</div><div class="metric-value">13.03 億 (年增+28.75%)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">6.50 ~ 7.20 元 (倍數爆發)</div></div>
+        </div>
+        <div>
+          <div class="card-title">矽晶圓漲價循環催化劑</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            三年庫存去化徹底結束，受惠 AI 伺服器、HBM 與晶圓代工產能滿載，全尺寸矽晶圓全面啟動漲價潮。麥寮 12 吋擴產新廠產能開出，成為半導體材料端最強先行指標。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3533 嘉澤 -->
+  <details>
+    <summary>3533 嘉澤（Lotes）<span class="tag" style="margin-left:auto;">伺服器 Socket 插槽與高速連接器霸主</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品結構與應用</div>
+          <div class="metric-row"><div class="metric-label">CPU Socket 插槽</div><div class="metric-value">約 48% (Intel/AMD主力)</div></div>
+          <div class="metric-row"><div class="metric-label">DDR5 / PCIe 5.0 插槽</div><div class="metric-value">約 32% (伺服器升級)</div></div>
+          <div class="metric-row"><div class="metric-label">車用與消費連接器</div><div class="metric-value">約 20%</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與獲利能見度</div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">85.00 ~ 95.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率區間</div><div class="metric-value">50% ~ 54%</div></div>
+          <div class="metric-row"><div class="metric-label">高階伺服器插槽市佔</div><div class="metric-value">超過 35%</div></div>
+        </div>
+        <div>
+          <div class="card-title">超精密模具與專利護城河</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            伺服器針腳數突破數千針，公差要求達微米級。嘉澤擁有自主模具開發實力與全球專利網，Intel Birch Stream 與 AMD Turin 新平台滲透率攀升，享極高產品單價與毛利。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 3665 貿聯-KY -->
+  <details open>
+    <summary>3665 貿聯-KY（BizLink）<span class="tag" style="margin-left:auto;">次世代 800V HVDC 線束・H1 EPS 26.94元創天價</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">業務板塊營收佔比</div>
+          <div class="metric-row"><div class="metric-label">高效能運算 (HPC / AI)</div><div class="metric-value">約 35% (800V/Helio銅纜)</div></div>
+          <div class="metric-row"><div class="metric-label">工業應用 (Industrial)</div><div class="metric-value">約 32% (醫療/半導體設備)</div></div>
+          <div class="metric-row"><div class="metric-label">車用電子 (Automotive)</div><div class="metric-value">約 18% (電動車高壓線束)</div></div>
+          <div class="metric-row"><div class="metric-label">電器與周邊 (Appliance)</div><div class="metric-value">約 15%</div></div>
+        </div>
+        <div>
+          <div class="card-title">2026 歷史新高財務</div>
+          <div class="metric-row"><div class="metric-label">2026 Q2 單季 EPS</div><div class="metric-value">15.28 元 (歷史新高)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 上半年 EPS</div><div class="metric-value">26.94 元 (賺近三個股本)</div></div>
+          <div class="metric-row"><div class="metric-label">Q2 毛利率 / 營益率</div><div class="metric-value">30.73% / 17.22% (三率攀升)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">56.00 ~ 62.00 元</div></div>
+        </div>
+        <div>
+          <div class="card-title">次世代電力傳輸不可替代性</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            收購 Interplex Datacom 綜效全面爆發。次世代 AI 機櫃全面轉向 800V 高壓直流 (HVDC) 與 Helio 高速銅纜，貿聯為少數通過 CSP 全規格認證之全球龍頭，訂單直通 2028 年。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 4960 誠美材 -->
+  <details>
+    <summary>4960 誠美材（CMMT）<span class="tag" style="margin-left:auto;">偏光板車用與高階顯示轉型</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品結構</div>
+          <div class="metric-row"><div class="metric-label">大尺寸電視偏光板</div><div class="metric-value">約 55%</div></div>
+          <div class="metric-row"><div class="metric-label">IT 監視器與筆電偏光板</div><div class="metric-value">約 30%</div></div>
+          <div class="metric-row"><div class="metric-label">車用與利基光學膜</div><div class="metric-value">約 15% (高毛利轉型)</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與轉型進度</div>
+          <div class="metric-row"><div class="metric-label">2026 獲利展望</div><div class="metric-value">損益兩平邁向小幅盈利</div></div>
+          <div class="metric-row"><div class="metric-label">每股淨值 (BVPS)</div><div class="metric-value">約 14.50 元 (P/B 偏低)</div></div>
+          <div class="metric-row"><div class="metric-label">經營層股權結構</div><div class="metric-value">經營權爭奪塵埃落定</div></div>
+        </div>
+        <div>
+          <div class="card-title">轉型評估與風險</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            偏光板面臨中國同業產能競爭，毛利率受限。公司透過減資健全財務，積極切入車用曲面顯示與防窺光學膜，靜待面板景氣落底回溫。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 6770 力積電 -->
+  <details open>
+    <summary>6770 力積電（PSMC）<span class="tag" style="margin-left:auto;">3D AI Foundry 轉型・美光500億入帳</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">轉型技術與產能</div>
+          <div class="metric-row"><div class="metric-label">3D WoW 晶圓堆疊</div><div class="metric-value">AI 邊緣運算記憶體整合</div></div>
+          <div class="metric-row"><div class="metric-label">矽中介層 (Interposer)</div><div class="metric-value">CoWoS 封裝第二供應商</div></div>
+          <div class="metric-row"><div class="metric-label">矽電容 (IPD)</div><div class="metric-value">高頻供電與訊號完整性</div></div>
+          <div class="metric-row"><div class="metric-label">銅鑼廠轉移美光</div><div class="metric-value">獲逾 500 億現金體質大改</div></div>
+        </div>
+        <div>
+          <div class="card-title">最新財務與營運</div>
+          <div class="metric-row"><div class="metric-label">7月合併營收</div><div class="metric-value">66.69 億 (48個月新高)</div></div>
+          <div class="metric-row"><div class="metric-label">Q2 毛利率</div><div class="metric-value">回升至 28.0%</div></div>
+          <div class="metric-row"><div class="metric-label">每股淨值 (BVPS)</div><div class="metric-value">21.50 元 (財務安全)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">邁向由虧轉盈 (1.20~1.80元)</div></div>
+        </div>
+        <div>
+          <div class="card-title">轉型契機與短線籌碼風險</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            擺脫成熟晶圓殺價血海，切入「3D AI Foundry」獲國際大廠採用。但 8/31 爆 20 萬張天量後，9/1 遭外資狂賣 8 萬張，短線籌碼極為凌亂，須嚴守 68 元防守線待量縮止跌。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- 8069 元太 -->
+  <details>
+    <summary>8069 元太（E Ink）<span class="tag" style="margin-left:auto;">全球電子紙絕對壟斷者</span></summary>
+    <div class="details-body">
+      <div class="grid-3">
+        <div>
+          <div class="card-title">產品線與應用比</div>
+          <div class="metric-row"><div class="metric-label">電子貨架標籤 (ESL)</div><div class="metric-value">約 55% (沃爾瑪導入換機)</div></div>
+          <div class="metric-row"><div class="metric-label">電子書閱讀器 / 筆記本</div><div class="metric-value">約 35% (彩色電子紙普及)</div></div>
+          <div class="metric-row"><div class="metric-label">電子看板與新應用</div><div class="metric-value">約 10% (智慧交通/零售)</div></div>
+        </div>
+        <div>
+          <div class="card-title">財務與全球市佔率</div>
+          <div class="metric-row"><div class="metric-label">全球電子紙市佔率</div><div class="metric-value">高達 90% 以上 (絕對獨佔)</div></div>
+          <div class="metric-row"><div class="metric-label">2026 全年預估 EPS</div><div class="metric-value">11.50 ~ 13.00 元</div></div>
+          <div class="metric-row"><div class="metric-label">毛利率水準</div><div class="metric-value">52% ~ 56%</div></div>
+        </div>
+        <div>
+          <div class="card-title">專利壟斷與 ESG 浪潮</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+            掌握全球電子微膠囊與微杯核心專利網，無同業可繞道。彩色電子紙技術成熟（Kaleido / Gallery 3），配合全球零售 ESG 節能規範全面鋪設電子標籤，長期現金流極強。
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════
+     TAB 4: 價值投資分析
+     ════════════════════════════════════════════════════ -->
+<div class="tab-panel" id="panel-value">
+  <div class="section-header">
+    <h2>巴菲特價值投資與估值模型</h2>
+    <span class="section-date">五大估值模型交叉推算 ｜ 安全邊際評估</span>
+  </div>
+
+  <div class="subsection-title">核心焦點標的估值卡片</div>
+
+  <!-- 華碩 2357 價值評估卡片 -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;">2357 華碩（ASUS）</div>
+        <span class="tag">AI 伺服器暴增 150% ｜ Copilot+ AI PC 換機潮</span>
+      </div>
+      <div style="text-align:right;">
+        <div class="price-big up num-highlight">1,010.00 元</div>
+        <div style="font-size:12px;color:var(--accent-blue);font-weight:600;">合理價中樞：1,140 ~ 1,180 元</div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">TTM EPS</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">68.40 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">2026E Forward EPS</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">76.00 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward P/E</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">13.29 倍</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward PEG</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">0.25 (極度低估)</div>
+      </div>
+    </div>
+
+    <!-- 五級估值區間色階條 -->
+    <div class="val-bar-wrapper">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:6px;">
+        <span>五級估值區間色階條</span>
+        <span class="font-bold">當前市價 1,010 元：【合理偏低邁向合理中樞】</span>
+      </div>
+      <div class="val-spectrum">
+        <div class="spec-cheap" title="便宜價"></div>
+        <div class="spec-fair-low" title="合理偏低"></div>
+        <div class="spec-fair" title="合理價中樞"></div>
+        <div class="spec-fair-high" title="合理偏高"></div>
+        <div class="spec-dear" title="昂貴價"></div>
+      </div>
+      <div class="val-legend">
+        <span>便宜價<br>800~880</span>
+        <span>合理偏低<br>890~1,000</span>
+        <span>合理中樞<br>1,120~1,180</span>
+        <span>合理偏高<br>1,250~1,380</span>
+        <span>昂貴價<br>1,450+</span>
+      </div>
+    </div>
+
+    <div class="buffett-quote">
+      「用合理的價格買進一家卓越的公司，遠比用便宜的價格買進一家平庸的公司要好得多。」<br>
+      華碩在 ROG 品牌護城河基礎上，AI 伺服器營收年增 150% 且 Q2 EPS 衝上 25.64 元。當前 Forward PEG 僅 0.25，處於黃金甜蜜區，距合理中樞 1,150 元具備 +15% 以上回歸空間。
+    </div>
+  </div>
+
+  <!-- 台新新光金 2887 價值評估卡片 -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;">2887 台新新光金（TSFH）</div>
+        <span class="tag">第四大兆元金控 ｜ H1獲利438億年增329%</span>
+      </div>
+      <div style="text-align:right;">
+        <div class="price-big up num-highlight">40.30 元</div>
+        <div style="font-size:12px;color:var(--accent-blue);font-weight:600;">合理價中樞：42.0 ~ 46.0 元</div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">TTM EPS (年化)</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">2.75 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">2026E Forward EPS</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">3.35 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward P/E</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">12.02 倍</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward PEG</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">0.34 (顯著低估)</div>
+      </div>
+    </div>
+
+    <!-- 五級估值區間色階條 -->
+    <div class="val-bar-wrapper">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:6px;">
+        <span>五級估值區間色階條</span>
+        <span class="font-bold">當前市價 40.30 元：【正加速收斂至合理中樞 44 元】</span>
+      </div>
+      <div class="val-spectrum">
+        <div class="spec-cheap" title="便宜價"></div>
+        <div class="spec-fair-low" title="合理偏低"></div>
+        <div class="spec-fair" title="合理價中樞"></div>
+        <div class="spec-fair-high" title="合理偏高"></div>
+        <div class="spec-dear" title="昂貴價"></div>
+      </div>
+      <div class="val-legend">
+        <span>便宜價<br>28~32</span>
+        <span>合理偏低<br>35~39</span>
+        <span>合理中樞<br>42~46</span>
+        <span>合理偏高<br>48~52</span>
+        <span>昂貴價<br>55+</span>
+      </div>
+    </div>
+
+    <div class="buffett-quote">
+      「投資特許金融行業的精髓在於獲取便宜、源源不絕的浮存金（Float）。」<br>
+      台新與新光合併後總資產破 9 兆元，消金數位帳戶搭配壽險大資金，上半年純益 438 億元創天價。目前股價 40.30 元距合理中樞 44 元仍有約 +10% 空間，且享 5%+ 現金殖利率保護。
+    </div>
+  </div>
+
+  <!-- 創意 3443 價值評估卡片 -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <div style="font-size:18px;font-weight:800;">3443 創意（GUC）</div>
+        <span class="tag">台積電 35% 持股親生子 ｜ ASIC 稀缺性溢價</span>
+      </div>
+      <div style="text-align:right;">
+        <div class="price-big down num-highlight">5,995.00 元</div>
+        <div style="font-size:12px;color:var(--accent-blue);font-weight:600;">合理價中樞：6,200 ~ 6,500 元</div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">TTM EPS</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">43.50 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">2026E Forward EPS</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">56.00 元</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward P/E</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">107.0 倍</div>
+      </div>
+      <div class="card" style="padding:12px;background:#f8fafc;">
+        <div class="metric-label">Forward PEG</div>
+        <div class="num-highlight font-bold" style="font-size:16px;">1.15 (享龍頭稀缺溢價)</div>
+      </div>
+    </div>
+
+    <!-- 五級估值區間色階條 -->
+    <div class="val-bar-wrapper">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;margin-bottom:6px;">
+        <span>五級估值區間色階條</span>
+        <span class="font-bold">當前市價 5,995 元：【回落至合理偏低～合理中樞邊界】</span>
+      </div>
+      <div class="val-spectrum">
+        <div class="spec-cheap" title="便宜價"></div>
+        <div class="spec-fair-low" title="合理偏低"></div>
+        <div class="spec-fair" title="合理價中樞"></div>
+        <div class="spec-fair-high" title="合理偏高"></div>
+        <div class="spec-dear" title="昂貴價"></div>
+      </div>
+      <div class="val-legend">
+        <span>便宜價<br>4,500~5,000</span>
+        <span>合理偏低<br>5,200~5,700</span>
+        <span>合理中樞<br>6,100~6,700</span>
+        <span>合理偏高<br>7,000~7,500</span>
+        <span>昂貴價<br>7,800+</span>
+      </div>
+    </div>
+
+    <div class="buffett-quote">
+      「極致的護城河往往來自於與行業霸主的血脈相連與絕對信任。當一家企業掌握了最關鍵的技術標準與無可替代的產能通道時，它便擁有了無窮的定價權。」<br>
+      今日衝上 6,490 元後短線拉回至 5,995 元，距合理價中樞 6,400 元具備約 +7%~+12% 回歸空間，待高檔浮額洗淨後長多格局不變。
+    </div>
+  </div>
+
+  <!-- 價值投資綜合比較表 -->
+  <div class="subsection">
+    <div class="subsection-title">價值投資綜合比較表（跨族群估值橫向對比）</div>
+    <div class="card">
+      <div class="scroll-x">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>股票代號 / 名稱</th>
+              <th>最新股價</th>
+              <th>Forward P/E</th>
+              <th>Forward PEG</th>
+              <th>合理價中樞</th>
+              <th>潛在回歸空間</th>
+              <th>巴菲特評級與價值定位</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>2357 華碩</strong></td>
+              <td class="num-highlight font-bold">1,010 元</td>
+              <td>13.3x</td>
+              <td class="num-highlight font-bold">0.25</td>
+              <td class="num-highlight">1,150 元</td>
+              <td class="up font-bold">+13.9%</td>
+              <td><span class="tag">卓越企業・合理價格</span></td>
+            </tr>
+            <tr>
+              <td><strong>2887 台新新光金</strong></td>
+              <td class="num-highlight font-bold">40.30 元</td>
+              <td>12.0x</td>
+              <td class="num-highlight font-bold">0.34</td>
+              <td class="num-highlight">44.00 元</td>
+              <td class="up font-bold">+9.2%</td>
+              <td><span class="tag">金融重組巨頭・高股息</span></td>
+            </tr>
+            <tr>
+              <td><strong>3443 創意</strong></td>
+              <td class="num-highlight font-bold">5,995 元</td>
+              <td>107x</td>
+              <td>1.15</td>
+              <td class="num-highlight">6,400 元</td>
+              <td class="up font-bold">+6.8%</td>
+              <td><span class="tag">極致護城河・ASIC霸主</span></td>
+            </tr>
+            <tr>
+              <td><strong>3532 台勝科</strong></td>
+              <td class="num-highlight font-bold">402 元</td>
+              <td>59.1x (轉盈中)</td>
+              <td class="num-highlight font-bold">0.45</td>
+              <td class="num-highlight">430 元</td>
+              <td class="up font-bold">+7.0%</td>
+              <td><span class="tag">三年週期反轉・漲價先行</span></td>
+            </tr>
+            <tr>
+              <td><strong>3665 貿聯-KY</strong></td>
+              <td class="num-highlight font-bold">2,315 元</td>
+              <td>39.5x</td>
+              <td class="num-highlight font-bold">0.68</td>
+              <td class="num-highlight">2,550 元</td>
+              <td class="up font-bold">+10.1%</td>
+              <td><span class="tag">800V高壓剛需・訂單直通2028</span></td>
+            </tr>
+            <tr>
+              <td><strong>6770 力積電</strong></td>
+              <td class="num-highlight font-bold">70.80 元</td>
+              <td>虧損邁向轉盈</td>
+              <td>P/B 3.29x</td>
+              <td class="num-highlight">76.00 元</td>
+              <td class="up font-bold">+7.3%</td>
+              <td><span class="tag">轉型轉機・籌碼待洗淨</span></td>
+            </tr>
+            <tr>
+              <td><strong>2330 台積電</strong></td>
+              <td class="num-highlight">1,215 元</td>
+              <td>20.9x</td>
+              <td class="num-highlight font-bold">0.65</td>
+              <td class="num-highlight">1,450 元</td>
+              <td class="up font-bold">+19.3%</td>
+              <td><span class="tag">世界級收費亭・無可替代</span></td>
+            </tr>
+            <tr>
+              <td><strong>2408 南亞科</strong></td>
+              <td class="num-highlight">543 元</td>
+              <td>10.3x</td>
+              <td class="num-highlight font-bold">0.18</td>
+              <td class="num-highlight">640 元</td>
+              <td class="up font-bold">+17.8%</td>
+              <td><span class="tag">DRAM 超級景氣循環</span></td>
+            </tr>
+            <tr>
+              <td><strong>3017 奇鋐</strong></td>
+              <td class="num-highlight">815 元</td>
+              <td>24.7x</td>
+              <td class="num-highlight font-bold">0.62</td>
+              <td class="num-highlight">950 元</td>
+              <td class="up font-bold">+16.5%</td>
+              <td><span class="tag">液冷冷板絕對領先</span></td>
+            </tr>
+            <tr>
+              <td><strong>3037 欣興</strong></td>
+              <td class="num-highlight">980 元</td>
+              <td>35.5x</td>
+              <td class="num-highlight font-bold">0.35</td>
+              <td class="num-highlight">1,300 元</td>
+              <td class="up font-bold">+32.6%</td>
+              <td><span class="tag">非理性恐慌・待止跌信號</span></td>
+            </tr>
+            <tr>
+              <td><strong>1342 八貫</strong></td>
+              <td class="num-highlight">103 元</td>
+              <td>12.1x</td>
+              <td class="num-highlight font-bold">0.49</td>
+              <td class="num-highlight">144.5 元</td>
+              <td class="up font-bold">+40.3%</td>
+              <td><span class="tag">航太認證深護城河・低估</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div>台股交易情報中心 ｜ AI 智能量化研究與視覺化系統 ｜ 基準日期：2026年9月1日</div>
+  <div style="margin-top:6px;font-size:11px;color:#94a3b8;">
+    本報告僅供內部研究與交易決策參考，不構成外部任何投資推介。市場有風險，交易須嚴守紀律與資金防守底線。
+  </div>
+</footer>
+
+<!-- ═══════════════════ SCRIPT ═══════════════════ -->
+<script>
+  function switchTab(tabId) {
+    // 切換按鈕狀態
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    const targetBtn = document.getElementById('tab-' + tabId);
+    if (targetBtn) targetBtn.classList.add('active');
+
+    // 切換分頁面板
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+    const targetPanel = document.getElementById('panel-' + tabId);
+    if (targetPanel) targetPanel.classList.add('active');
+
+    // 平滑滾動至頂部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 初始化進度條平滑動畫
+  document.addEventListener('DOMContentLoaded', () => {
+    const fills = document.querySelectorAll('.progress-fill');
+    fills.forEach(fill => {
+      const targetWidth = fill.style.width;
+      fill.style.width = '0%';
+      setTimeout(() => {
+        fill.style.width = targetWidth;
+      }, 150);
+    });
+  });
+</script>
+</body>
+</html>
