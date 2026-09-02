@@ -1,16 +1,16 @@
 :root {
-  --bg-primary: #f8fafc;
+  --bg-primary: #f0f4f8;
   --bg-secondary: #ffffff;
   --bg-card: #ffffff;
   --bg-card-hover: #f1f5f9;
   --accent-navy: #0f172a;
   --accent-blue: #1d4ed8;
-  --accent-green: #15803d;
-  --accent-red: #b91c1c;
-  --accent-neutral: #64748b;
+  --accent-green: #059669;
+  --accent-red: #dc2626;
+  --accent-neutral: #d97706;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #64748b;
+  --text-muted: #94a3b8;
   --border: #e2e8f0;
   --border-accent: #cbd5e1;
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.03);
